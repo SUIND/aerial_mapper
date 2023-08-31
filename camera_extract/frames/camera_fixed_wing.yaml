@@ -1,0 +1,26 @@
+label: "sensorpod: calibration hitimo"
+cameras:
+- camera:
+    label: cam0
+    distortion:
+      parameters:
+        cols: 1
+        rows: 4
+        data: [-0.008727596369828998, 0.006623016282363816, -0.00023614453450713208,
+    0.0015228491648798957]
+      type: radial-tangential
+    image_height: 1080
+    image_width: 1920
+    intrinsics:
+      cols: 1
+      rows: 4
+      data: [1515.2070186419614, 1510.414562403687, 972.9280980468435, 530.9567017317939]
+    type: pinhole
+    line-delay-nanoseconds: 0
+  T_B_C:
+      cols: 4
+      rows: 4
+      data: [1.0, 0.0, 0.0, 0.0,
+             0.0, 1.0, 0.0, 0.0,
+             0.0, 0.0, 1.0, 0.0,
+             0.,  0.,  0.,  1.]
