@@ -35,6 +35,8 @@ AerialMapperIO::AerialMapperIO() {}
 void AerialMapperIO::loadPosesFromFile(const PoseFormat& format,
                                        const std::string& filename,
                                        Poses* T_G_Bs) {
+
+  LOG(INFO) << "Loading poses in Standard format from file: " << filename;                  
   CHECK(T_G_Bs);
   CHECK(!filename.empty()) << "Empty filename";
   LOG(INFO) << "Loading body poses via format: " <<
@@ -178,7 +180,7 @@ void AerialMapperIO::toStandardFormat(
   }
   CHECK(T_G_Bs_associated.size() == image_timestamps.size());
   CHECK(T_G_Bs_associated.size() == image_names.size());
-
+  LOG(INFO) << "image_names size " << image_names.size();
   // Save body poses to file with standard naming.ca
   std::string path_filename_poses = new_directory + "opt_poses.txt";
   std::ofstream fs;
@@ -198,7 +200,7 @@ void AerialMapperIO::toStandardFormat(
 
   // Save with standard naming.
   for (size_t i = 0u; i < images.size(); ++i) {
-    const std::string image_filename = new_directory + "image_"
+    const std::string image_filename = new_directory + "frame_"
         + std::to_string(i) + ".jpg";
     cv::imwrite(image_filename, images[i]);
   }
@@ -209,6 +211,7 @@ void AerialMapperIO::loadImagesFromFile(
     bool load_colored_images) {
   CHECK(images);
   LOG(INFO) << "Loading images from directory+prefix: " << filename_base;
+  //LOG(INFO) << "Size ::::: " << num_poses;
   for (size_t i = 0u; i < num_poses; ++i) {
     const std::string& filename =
         filename_base + std::to_string(i) + ".jpg";
@@ -216,8 +219,19 @@ void AerialMapperIO::loadImagesFromFile(
     if (!load_colored_images) {
       image = cv::imread(filename, CV_LOAD_IMAGE_GRAYSCALE);
     } else {
-      image = cv::imread(filename, CV_LOAD_IMAGE_COLOR);
+    //   cv::Mat grey_image = cv::imread(filename, cv::IMREAD_GRAYSCALE);
+    //   image = cv::Mat(grey_image.rows, grey_image.cols, CV_8UC3, cv::Scalar(0, 0, 0));
+    //   for (int y = 0; y < grey_image.rows; ++y) {
+    //     for (int x = 0; x < grey_image.cols; ++x) {
+    //         uchar grey_intensity = grey_image.at<uchar>(y, x);
+    //         image.at<cv::Vec3b>(y, x) = cv::Vec3b(grey_intensity, 0, 0);
+    //     }
+    // }
+      image = cv::imread(filename, CV_LOAD_IMAGE_COLOR);                               
+      // cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+
     }
+    LOG(INFO) << "Image name ... " << filename;
     cv::imshow("Image", image);
     cv::waitKey(1);
     images->push_back(image);
@@ -272,7 +286,7 @@ void AerialMapperIO::subtractOriginFromPoses(const Eigen::Vector3d& origin,
 void AerialMapperIO::exportPix4dGeofile(const Poses& T_G_Cs,
                                         const Images& images) {
   CHECK(images.size() == T_G_Cs.size());
-  std::string output_directory = "/tmp/pix4d";
+  std::string output_directory = "/tmp";
   std::string filename = output_directory + "/geofile.txt";
   LOG(INFO) << "Writing geofile in " << filename;
   std::ofstream fs;

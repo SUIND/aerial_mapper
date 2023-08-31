@@ -118,6 +118,7 @@ void Stereo::addFrame(const Pose& T_G_B, const Image& image_raw,
   cv::Mat image;
   if (image_raw.type() == CV_8UC1) {
   } else if (image_raw.type() == CV_8UC3) {
+   // LOG(INFO) << "3 channel";
     cv::cvtColor(image_raw, image, CV_RGB2GRAY);
   } else {
     LOG(FATAL) << "Image type not supported";
@@ -152,21 +153,24 @@ void Stereo::processStereoFrame(
   // 1. Undistort raw images.
   cv::Mat image_undistorted_1 = image_distorted_1_;
   cv::Mat image_undistorted_2 = image_distorted_2_;
+  // cv::cvtColor(image_undistorted_1, image_undistorted_1, CV_RGB2GRAY);
+  // cv::cvtColor(image_undistorted_2, image_undistorted_2, CV_RGB2GRAY);
   if (settings_.images_need_undistortion) {
     undistortRawImages(image_distorted_1_, image_distorted_2_,
                        &image_undistorted_1, &image_undistorted_2);
   }
-
+  //LOG(INFO) << "2. Rectify undistorted images";
   // 2. Rectify undistorted images.
   RectifiedStereoPair rectified_stereo_pair;
   rectifier_->rectifyStereoPair(stereo_rig_params_, image_undistorted_1,
                                 image_undistorted_2, &rectified_stereo_pair);
-
+  //LOG(INFO) << "3. Compute disparity map based on rectified images";
   // 3. Compute disparity map based on rectified images.
   DensifiedStereoPair densified_stereo_pair;
+  //LOG(INFO) << "wtf";
   densifier_->computeDisparityMap(rectified_stereo_pair,
                                   &densified_stereo_pair);
-
+ // LOG(INFO) << "4. Compute point cloud.";
   // 4. Compute point cloud.
   point_cloud_ros_msg_.data.clear();
   point_cloud_ros_msg_.data.resize(point_cloud_ros_msg_.row_step *
@@ -179,7 +183,7 @@ void Stereo::processStereoFrame(
   if (point_cloud_intensities) {
     *point_cloud_intensities = densified_stereo_pair.point_cloud_intensities;
   }
-  
+ // LOG(INFO) << "5. Publish the point cloud";
   // 5. Publish the point cloud.
   pub_point_cloud_.publish(point_cloud_ros_msg_);
   ros::spinOnce();

@@ -1,0 +1,8 @@
+<launch>
+    <!-- Launch the node to generate Pix4D geofile -->
+    <node pkg="aerial_mapper_demos" type="aerial_mapper_demos_export_pix4d_geofile" name="generate_pix4d_geofile" output="screen">
+        <param name="util_data_directory" value="/home/axelwagner/Downloads/cadastre_gray/" />
+        <param name="util_filename_poses" value="opt_poses.txt" />
+        <param name="util_prefix_images" value="image_" />
+    </node>
+</launch>

@@ -79,6 +79,13 @@ void OrthoBackwardGrid::updateOrthomosaicLayer(const Poses& T_G_Cs,
            aslam::ProjectionResult::POINT_BEHIND_CAMERA) &&
           (projection_result.getDetailedStatus() !=
            aslam::ProjectionResult::PROJECTION_INVALID);
+      // LOG(INFO) <<(keypoint(0) >= 0.0) <<" "<< (keypoint(1) >= 0.0) <<" "<<
+      //     (keypoint(0) < static_cast<double>(camera.imageWidth())) <<" "<<
+      //     (keypoint(1) < static_cast<double>(camera.imageHeight())) <<" "<<
+      //     (projection_result.getDetailedStatus() !=
+      //      aslam::ProjectionResult::POINT_BEHIND_CAMERA) <<" "<<
+      //     (projection_result.getDetailedStatus() !=
+      //      aslam::ProjectionResult::PROJECTION_INVALID);
       if (keypoint_visible) {
         Eigen::Vector3d u = C_landmark;
         // Observation vector.

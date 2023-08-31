@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(aerial_mapper_utils)
 
 find_package(catkin_simple REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system filesystem thread)
 catkin_simple(ALL_DEPS_REQUIRED)
 
 cs_add_library(${PROJECT_NAME}

@@ -3,16 +3,17 @@
 --v=200
 
 # dataset
---data_directory=/tmp/simulation/
+--data_directory=/home/axelwagner/Downloads/cadastre_gray/
 --filename_poses=opt_poses.txt
 --prefix_images=image_
 --filename_camera_rig=camera_fixed_wing.yaml
 
 # ortho_from_pcl 
 --ortho_from_pcl_interpolation_radius=10
---ortho_from_pcl_use_adaptive_interpolation=false
+--ortho_from_pcl_use_adaptive_interpolation=true
+--ortho_from_pcl_save_orthomosaic_jpg=true
 --ortho_from_pcl_show_orthomosaic_opencv=true
---ortho_from_pcl_orthomosaic_jpg_filename=/tmp/orthomosaic_from_pcl.jpg
+--ortho_from_pcl_orthomosaic_jpg_filename=/home/axelwagner/Downloads/orthomosaic_from_pcl.jpg
 --ortho_from_pcl_center_easting=0.0
 --ortho_from_pcl_center_northing=0.0
 --ortho_from_pcl_delta_easting=200.0

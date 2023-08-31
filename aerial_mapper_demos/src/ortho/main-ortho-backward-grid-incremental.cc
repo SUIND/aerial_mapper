@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
 
   // Load images from file.
   size_t num_poses = T_G_Bs.size();
-  Images images;
+  Images images; 
   io_handler.loadImagesFromFile(filename_images, num_poses, &images,
                                 FLAGS_backward_grid_colored_ortho);
 
@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
   settings_ortho.colored_ortho = FLAGS_backward_grid_colored_ortho;
   settings_ortho.use_multi_threads = FLAGS_backward_grid_use_multi_threads;
   ortho::OrthoBackwardGrid mosaic(ncameras, settings_ortho, map.getMutable());
-
+  //LOG(INFO) << "Before for loop " << settings_ortho.colored_ortho;
   // Run all modules incrementally.
   Images images_subset;
   Poses T_G_Bs_subset;

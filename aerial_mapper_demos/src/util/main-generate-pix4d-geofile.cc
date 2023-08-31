@@ -30,10 +30,12 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "util_generate_pix4d_geofile");
   ros::Time::init();
 
+
+  //ROS_INFO("Starting the util_generate_pix4d_geofile node");
   // Parse input parameters.
-  const std::string& base = FLAGS_util_data_directory;
-  const std::string& filename_poses = FLAGS_util_filename_poses;
-  const std::string& filename_images = base + FLAGS_util_prefix_images;
+  const std::string& base = "/home/axelwagner/Downloads/cadastre_gray/";
+  const std::string& filename_poses = "opt_poses.txt";
+  const std::string& filename_images = base + "image_";
 
   // Load body poses from file.
   Poses T_G_Bs;
