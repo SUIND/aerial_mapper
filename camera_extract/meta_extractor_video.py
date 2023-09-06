@@ -1,31 +1,29 @@
 
 import pyexiv2
 import os
-
 import utm
 import numpy as np
-
 import math
 import random
 import pandas as pd
+import cv2
+import subprocess
+import re
+import csv
 
 
-def to_quaternion(roll, pitch, yaw):
-    # Abbreviations for the various angular functions
-    cr = math.cos(roll * 0.5)
-    sr = math.sin(roll * 0.5)
-    cp = math.cos(pitch * 0.5)
-    sp = math.sin(pitch * 0.5)
-    cy = math.cos(yaw * 0.5)
-    sy = math.sin(yaw * 0.5)
 
-    qw = cr * cp * cy + sr * sp * sy
-    qx = sr * cp * cy - cr * sp * sy
-    qy = cr * sp * cy + sr * cp * sy
-    qz = cr * cp * sy - sr * sp * cy
+# Set the path to the video file
+video_path = '/home/axelwagner/Downloads/test_1/DJI_0354.MP4'
 
-    return qw, qx, qy, qz
+#current folder path
+folder_path = "/home/axelwagner/catkin_ws_aerial_mapper/src/aerial_mapper/camera_extract"
 
+#path to video csv
+csv_file_path = "/home/axelwagner/DJI_RECORDINGS/match/Aug-31st-2023-05-34PM-Flight-Airdata.csv"
+
+
+#Function to get quarternion from roll pitch yaw
 def get_quaternion_from_euler(roll, pitch, yaw):
     """
     Convert an Euler angle to a quaternion.
@@ -45,6 +43,7 @@ def get_quaternion_from_euler(roll, pitch, yaw):
  
     return [qw, qx, qy, qz]
 
+#Function to do quaternion multiplication  
 def quaternion_multiply(quaternion1, quaternion0):
     w0, x0, y0, z0 = quaternion0
     w1, x1, y1, z1 = quaternion1
@@ -55,22 +54,23 @@ def quaternion_multiply(quaternion1, quaternion0):
     quart= quart/(np.sqrt(quart[0]**2+quart[1]**2+quart[2]**2+quart[3]**2))
     return quart
 
+folder_name = "frames"
 
-folder_path = "/home/axelwagner/catkin_ws_aerial_mapper/src/camera_extract"
+# Check if the folder already exists
+if not os.path.exists(folder_name):
+    # If it doesn't exist, create it
+    os.mkdir(folder_name)
+    print(f"Folder '{folder_name}' created successfully.")
+else:
+    print(f"Folder '{folder_name}' already exists.")
 
 drone_pos_txt = []
 
 north, east = 0,0
 height_0 = 0
-csv_file_path = "/home/axelwagner/DJI_RECORDINGS/match/Aug-31st-2023-05-34PM-Flight-Airdata.csv"
+
 csv_data = pd.read_csv(csv_file_path)
-# for column in csv_data.columns:
-#     print(column)
-# compass_heading(degrees), pitch(degrees), roll(degrees)
-# gimbal_roll = row["gimbal_roll(degrees)"]
-#     gimbal_pitch = row["gimbal_pitch(degrees)"]
-#     gimbal_heading = row["gimbal_heading(degrees)"]
-# 0.00670337315266709 0.961768673473662 0.239566286796365 -0.132529535363593
+#go trough csv line by line and extract the required information
 for i, row in csv_data.iterrows():
     latitude = row["latitude"]
     longitude = row["longitude"]
@@ -81,34 +81,40 @@ for i, row in csv_data.iterrows():
     # if (i < 50):
     #     print(altitude_above_seaLevel*0.3048)
 
+    #from degree to radiant
     euler_Gimbal = [float(gimbal_roll) * (math.pi / 180),
                     float(gimbal_pitch) * (math.pi / 180),
                     float(gimbal_heading) * (math.pi / 180)]
+    #unchanged coordinates from flight data to quarternions 
     result_quaternion_gimbal = get_quaternion_from_euler(euler_Gimbal[0], euler_Gimbal[1], euler_Gimbal[2])
+
+    #!!! these are quarternions we tried using to rotate the reference system
     rot = [0.707, 0.0, 0.707, 0.0]
     rot_2 = [0.0, 1.0, 0.0, 0.0]
     result_quaternion_gimbal = quaternion_multiply(rot,result_quaternion_gimbal)
     result_quaternion_gimbal = quaternion_multiply(rot_2,result_quaternion_gimbal)
+    #!!!
     
     height = float(altitude_above_seaLevel) * 0.3048  # Convert feet to meters
-    UTM_E, UTM_N, Zone, _ = utm.from_latlon(float(latitude), float(longitude))
+    UTM_E, UTM_N, Zone, _ = utm.from_latlon(float(latitude), float(longitude)) # convert gps to UTM
 
+    #set first position to 0, 0
     if i == 0:
         north, east = UTM_N, UTM_E
         # height_0 = height
-
 
     UTM_E = UTM_E - east
     UTM_N = UTM_N - north
     # height = height -height_0
 
-    tmp_list = [UTM_E, UTM_N, height, result_quaternion_gimbal[0], result_quaternion_gimbal[1],
+    tmp_list = [UTM_E, -UTM_N, height, result_quaternion_gimbal[0], result_quaternion_gimbal[1],
                 result_quaternion_gimbal[2], result_quaternion_gimbal[3]]  # Corrected order of elements
     # tmp_list = [UTM_E, UTM_N, height, 0.00670337315266709 ,0.961768673473662 ,0.239566286796365 ,-0.132529535363593]  # Corrected order of elements
 
     drone_pos_txt.append(tmp_list)
 
-file_path = f'{folder_path}/{"opt_poses.txt"}'
+#format op_poses
+file_path = f'{folder_path}/{"frames/opt_poses.txt"}'
 with open(file_path, 'w') as file:
     for value_set in drone_pos_txt:
         line = " ".join(str(value) for value in value_set)
@@ -117,53 +123,99 @@ with open(file_path, 'w') as file:
 
 print("File 'data.txt' created successfully!")
 
-# import yaml
 
-# data ={
-#     "label": "sensorpod: calibration hitimo",
-#     "cameras": [
-#         {
-#             "camera": {
-#                 "label": "cam0",
-#                 "distortion": {
-#                     "parameters": {
-#                         "cols": 1,
-#                         "rows": 4,
-#                         "data": [0, 0, 0, 0]
-#                     },
-#                     "type": "equidistant"
-#                 },
-#                 "image_height": 480,
-#                 "image_width": 752,
-#                 "intrinsics": {
-#                     "cols": 1,
-#                     "rows": 4,
-#                     "data": [7389.595375722543, 7243.538461538462, 2640, 1973]
-#                 },
-#                 "type": "pinhole",
-#                 "line-delay-nanoseconds": 0
-#             },
-#             "T_B_C": {
-#                 "cols": 4,
-#                 "rows": 4,
-#                 "data": [1, 0, 0, 0,
-#                          0, 1, 0, 0,
-#                           0, 0, 1, 0,
-#                           0, 0, 0, 1]
-#             }
-#         }
-#     ]
-# }
+#Get subtitle csv
+# Run FFmpeg command to extract subtitles
+ffmpeg_command = [
+    'ffmpeg',
+    '-i', video_path,
+    '-f', 'srt',  # Specify the output format as SubRip (srt)
+    '-vn', '-an',  # Disable video and audio streams
+    '-map', '0:s:0',  # Select the first subtitle stream
+    '-y',  # Overwrite the output file if it already exists
+    'output.srt'  # Output subtitle file
+]
 
-# yaml_file_path = f'{folder_path}/{"calibration.yaml"}'
-# with open(yaml_file_path, "w") as yaml_file:
-#     yaml.dump(data, yaml_file, default_flow_style=False)
+subprocess.run(ffmpeg_command)
+
+# Read the srt file and split it into subtitle entries
+with open('output.srt', 'r', encoding='utf-8') as srt_file:
+    srt_content = srt_file.read()
+
+# Split the srt content into individual subtitle entries
+subtitle_entries = re.split(r'\n\n', srt_content)
+
+# Initialize a CSV writer
+csv_file = open('new_subtitles.csv', 'w', newline='', encoding='utf-8')
+csv_writer = csv.writer(csv_file)
+
+# Write CSV header
+csv_writer.writerow(['Subtitle Number', 'Start Time', 'End Time', 'Subtitle Text'])
+
+# Process each subtitle entry
+for i, entry in enumerate(subtitle_entries):
+    lines = entry.strip().split('\n')
+    if len(lines) >= 3 and re.match(r'^\d+$', lines[0]):
+        start_time, end_time = re.findall(r'(\d{2}:\d{2}:\d{2},\d{3})', lines[1])
+        subtitle_text = '\n'.join(lines[2:])
+        csv_writer.writerow([i + 1, start_time, end_time, subtitle_text])
+
+# Close the CSV file
+csv_file.close()
+
+# Read the CSV file into a DataFrame
+df = pd.read_csv('new_subtitles.csv')
+
+# Extract specific values from the "Subtitle Text" column
+def extract_value(text, key):
+    start_idx = text.find(key)
+    if start_idx != -1:
+        start_idx += len(key) + 1  # Move past the key and space
+        if key == 'GPS':
+            start_idx += 1  # Move past the opening parenthesis
+            end_idx = text.find(')', start_idx)
+            if end_idx == -1:
+                end_idx = None
+        elif key == 'D':
+            if start_idx != -1:
+                second_key_idx = text.find(key, start_idx + 1)
+                if second_key_idx != -1:
+                    start_idx = second_key_idx
+                    start_idx += len(key) + 1  # Move past the key and space
+                    end_idx = text.find(',', start_idx)
+                    if end_idx == -1:
+                        end_idx = None
+        else:
+            end_idx = text.find(',', start_idx)
+            if end_idx == -1:
+                end_idx = None
+        return text[start_idx:end_idx].strip()
+    return None
+
+keys_to_extract = ['F', 'SS', 'ISO', 'EV', 'DZOOM', 'GPS', 'D', 'H', 'H.S', 'V.S']
+
+for key in keys_to_extract:
+    df[key] = df['Subtitle Text'].apply(lambda x: extract_value(x, key))
+
+# Drop the "Subtitle Text" column
+df.drop(columns=['Subtitle Text'], inplace=True)
+
+# Save the modified DataFrame back to the final CSV file
+df.to_csv('final_subtitles.csv', index=False)
+
+# Print the first value for each column
+for column in df.columns:
+    first_value = df[column].iloc[0]
+    print(f"First value in {column}: {first_value}")
 
 
 
-# Load the CSV files
+
+#get matching frame/position
+
+# Load the subtitles and video csv files to syncronise
 file2_path = csv_file_path
-file1_path = 'new_subtitles.csv'
+file1_path = 'final_subtitles.csv'
 
 df1 = pd.read_csv(file1_path)
 df2 = pd.read_csv(file2_path)
@@ -201,11 +253,6 @@ print("Row closest to the target value:")
 print(closest_row["time(millisecond)"])
 
 
-
-import cv2
-
-# Video file path
-video_path = "/home/axelwagner/DJI_RECORDINGS/match/DJI_0364.MP4"
 
 # Open the video file
 cap = cv2.VideoCapture(video_path)
@@ -261,3 +308,4 @@ cap.release()
 cv2.destroyAllWindows()
 
 print(frames_used)
+
