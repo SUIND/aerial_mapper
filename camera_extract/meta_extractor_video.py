@@ -107,7 +107,7 @@ for i, row in csv_data.iterrows():
     UTM_N = UTM_N - north
     # height = height -height_0
 
-    tmp_list = [UTM_E, -UTM_N, height, result_quaternion_gimbal[0], result_quaternion_gimbal[1],
+    tmp_list = [UTM_E, UTM_N, height, result_quaternion_gimbal[0], result_quaternion_gimbal[1],
                 result_quaternion_gimbal[2], result_quaternion_gimbal[3]]  # Corrected order of elements
     # tmp_list = [UTM_E, UTM_N, height, 0.00670337315266709 ,0.961768673473662 ,0.239566286796365 ,-0.132529535363593]  # Corrected order of elements
 
